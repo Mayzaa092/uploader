@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MayzaaCloud · File Uploader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #ff7a45;
+            --primary-hover: #ff9466;
+            --primary-light: rgba(255, 122, 69, 0.12);
+            --bg-color: #0e0d14;
+            --card-bg: #17151f;
+            --text-main: #f3f0ff;
+            --text-muted: #948fab;
+            --border-light: #2a2735;
+            --border-dashed: #423d54;
+            --badge-bg: #1f1c2a;
+            --badge-text: #c9c3de;
+            --code-blue-bg: rgba(157, 111, 255, 0.1);
+            --code-gray-bg: #1a1824;
+            --code-dark-bg: #0b0a10;
+            --error-bg: rgba(248, 81, 73, 0.12);
+            --error-border: #f85149;
+            --error-text: #ff8079;
+            --success-bg: rgba(63, 214, 143, 0.12);
+            --success-border: #3fd68f;
+            --success-text: #5fe3a6;
+            --accent-violet: #9d6fff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 15% 10%, rgba(157, 111, 255, 0.16), transparent 45%),
+                radial-gradient(circle at 85% 90%, rgba(255, 122, 69, 0.14), transparent 45%),
+                var(--bg-color);
+            font-family: 'Inter', -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-main);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 2rem;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            color: var(--primary);
+        }
+
+        .logo-text {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-violet), var(--primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.03em;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 680px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 8px 30px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(157, 111, 255, 0.04) inset;
+            border: 1px solid var(--border-light);
+        }
+
+        /* ===== DROP ZONE ===== */
+        .drop-zone {
+            border: 2px dashed var(--border-dashed);
+            border-radius: 1rem;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--accent-violet);
+            background: var(--primary-light);
+        }
+
+        .drop-zone.disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .upload-icon-wrapper {
+            margin: 0 auto 1rem;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--accent-violet), var(--primary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 18px rgba(157, 111, 255, 0.35);
+            transition: all 0.3s ease;
+        }
+
+        .upload-icon-wrapper.loading {
+            animation: pulse-loading 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse-loading {
+            0%, 100% { transform: scale(1); box-shadow: 0 4px 18px rgba(157, 111, 255, 0.35); }
+            50% { transform: scale(1.05); box-shadow: 0 4px 32px rgba(255, 122, 69, 0.5); }
+        }
+
+        .upload-icon-wrapper svg {
+            width: 28px;
+            height: 28px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-icon-wrapper.loading svg {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .upload-icon-wrapper.success {
+            background: #16a34a;
+        }
+
+        .upload-icon-wrapper.error {
+            background: #dc2626;
+        }
+
+        .drop-zone .main-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .drop-zone .sub-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* ===== BADGES ===== */
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .badges span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--badge-text);
+            background: var(--badge-bg);
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+        }
+
+        .badges span .lucide {
+            width: 14px;
+            height: 14px;
+            color: var(--primary);
+        }
+
+        /* ===== LOADING BAR ===== */
+        .progress-wrapper {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .progress-wrapper.show {
+            display: block;
+        }
+
+        .progress-bar-track {
+            width: 100%;
+            height: 4px;
+            background: var(--border-light);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar-fill.indeterminate {
+            animation: indeterminate 1.5s ease-in-out infinite;
+            width: 40%;
+        }
+
+        @keyframes indeterminate {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(300%); }
+        }
+
+        .progress-text {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+            text-align: center;
+        }
+
+        /* ===== RESULT BOX ===== */
+        .result-box {
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+        }
+
+        .result-box .label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .result-box .url-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--code-blue-bg);
+            border: 1px solid var(--primary);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .result-box .url-wrapper.error {
+            background: var(--error-bg);
+            border-color: var(--error-border);
+        }
+
+        .result-box .url-wrapper.error .url {
+            color: var(--error-text);
+        }
+
+        .result-box .url-wrapper .url {
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--primary);
+            word-break: break-all;
+            font-weight: 500;
+        }
+
+        .result-box .url-wrapper .copy-btn {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.2s;
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .result-box .url-wrapper .copy-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .result-box .url-wrapper .copy-btn .lucide {
+            width: 16px;
+            height: 16px;
+        }
+
+        .result-box .file-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .result-box .file-info.error {
+            color: var(--error-text);
+        }
+
+        .result-box .file-info.success {
+            color: var(--success-text);
+        }
+
+        /* ===== ERROR MESSAGE ===== */
+        .error-message {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            margin-top: 0.75rem;
+            color: var(--error-text);
+            font-size: 0.85rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .error-message.show {
+            display: flex;
+        }
+
+        .error-message .lucide {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        /* ===== API SECTION ===== */
+        .api-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .api-header .lucide {
+            color: var(--primary);
+            width: 24px;
+            height: 24px;
+        }
+
+        .api-header h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .api-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .section-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .copy-btn-api {
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .copy-btn-api:hover {
+            color: var(--primary-hover);
+        }
+
+        .copy-btn-api .lucide {
+            width: 14px;
+            height: 14px;
+        }
+
+        .code-box {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+
+        .code-box.blue {
+            background: var(--code-blue-bg);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .code-box.gray {
+            background: var(--code-gray-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-light);
+        }
+
+        .code-box.dark {
+            background: var(--code-dark-bg);
+            color: #e2e8f0;
+            margin-bottom: 0;
+        }
+
+        .json-key {
+            color: #60a5fa;
+        }
+        .json-val {
+            color: #93c5fd;
+        }
+        .json-bool {
+            color: #34d399;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1e293b;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.error {
+            background: #dc2626;
+        }
+
+        .toast.success {
+            background: #16a34a;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            .card {
+                padding: 1.5rem;
+            }
+            .drop-zone {
+                padding: 2rem 1rem;
+            }
+            .badges {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .result-box .url-wrapper {
+                flex-wrap: wrap;
+            }
+            .result-box .url-wrapper .copy-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Logo -->
+    <a href="#" class="header">
+        <svg class="logo-icon" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V7H3V5Z"/>
+            <path d="M3 9V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V9H3ZM10 13C10 12.4477 10.4477 12 11 12H13C13.5523 12 14 12.4477 14 13C14 13.5523 13.5523 14 13 14H11C10.4477 14 10 13.5523 10 13Z"/>
+        </svg>
+        <span class="logo-text">MayzaaCloud</span>
+    </a>
+
+    <div class="container">
+        <!-- Card 1: Upload Area -->
+        <div class="card">
+            <div class="drop-zone" id="dropZone">
+                <div class="upload-icon-wrapper" id="uploadIconWrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <div class="main-text" id="dropMainText">Drop file or click here</div>
+                <div class="sub-text" id="dropSubText">Support upload all file types</div>
+                <input type="file" id="fileInput" multiple />
+
+                <!-- Progress Bar -->
+                <div class="progress-wrapper" id="progressWrapper">
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill indeterminate" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Uploading...</div>
+                </div>
+            </div>
+
+            <div class="badges">
+                <span>
+                    <i data-lucide="lock"></i>
+                    Max 4.5 MB
+                </span>
+                <span>
+                    <i data-lucide="zap"></i>
+                    Fast CDN
+                </span>
+                <span>
+                    <i data-lucide="clock"></i>
+                    Permanent
+                </span>
+            </div>
+
+            <!-- Result Box -->
+            <div class="result-box" id="resultBox">
+                <span class="label">🔗 URL</span>
+                <div class="url-wrapper" id="urlWrapper">
+                    <span class="url" id="resultUrl">https://...</span>
+                    <button class="copy-btn" id="copyResultBtn">
+                        <i data-lucide="copy"></i> Copy
+                    </button>
+                </div>
+                <div class="file-info" id="fileInfo"></div>
+                <div class="error-message" id="errorMessage">
+                    <i data-lucide="alert-circle"></i>
+                    <span id="errorText">Something went wrong</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Link Shortener -->
+        <div class="card">
+            <div class="api-header">
+                <i data-lucide="link-2"></i>
+                <h2>Convert Link</h2>
+            </div>
+            <p class="api-subtitle">Ubah link panjang jadi link simpel dari uploader ini.</p>
+
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                <input id="longUrlInput" type="text" placeholder="Tempel link panjang di sini, contoh: https://image.pollinations.ai/prompt/..."
+                    style="flex:1; min-width:200px; background:var(--code-gray-bg); border:1px solid var(--border-light); color:var(--text-main); border-radius:0.75rem; padding:0.75rem 1rem; font-family:'JetBrains Mono', monospace; font-size:0.85rem;" />
+                <button id="shortenBtn" class="copy-btn" style="padding:0.75rem 1.25rem;">
+                    <i data-lucide="scissors"></i> Shorten
+                </button>
+            </div>
+
+            <div class="result-box" id="shortenResultBox">
+                <span class="label">🔗 SHORT LINK</span>
+                <div class="url-wrapper" id="shortenUrlWrapper">
+                    <span class="url" id="shortenResultUrl">https://...</span>
+                    <button class="copy-btn" id="copyShortenBtn">
+                        <i data-lucide="copy"></i> Copy
+                    </button>
+                </div>
+                <div class="file-info" id="shortenInfo"></div>
+            </div>
+        </div>
+
+        <!-- Card 3: API Integration -->
+        <div class="card">
+            <div class="api-header">
+                <i data-lucide="code-2"></i>
+                <h2>API Integration</h2>
+            </div>
+            <p class="api-subtitle">Automate your uploads using our simple REST API.</p>
+
+            <div class="section-row">
+                <span class="section-label">POST ENDPOINT</span>
+                <button class="copy-btn-api" onclick="copyText(location.origin + '/api/upload')">
+                    <i data-lucide="copy"></i> Copy
+                </button>
+            </div>
+            <div class="code-box blue" id="endpointBox">
+                https://uploader.mayzaa.my.id/api/upload
+            </div>
+
+            <div class="section-row">
+                <span class="section-label">CURL EXAMPLE</span>
+                <button class="copy-btn-api" onclick="copyText('curl -X POST ' + location.origin + '/api/upload \\\n  -F &quot;files=@yourfile.png&quot;')">
+                    <i data-lucide="copy"></i> Copy
+                </button>
+            </div>
+            <div class="code-box gray" id="curlBox">curl -X POST https://uploader.mayzaa.my.id/api/upload \
+  -F "files=@yourfile.png"</div>
+
+            <div class="section-row">
+                <span class="section-label">RESPONSE FORMAT</span>
+            </div>
+            <div class="code-box dark">
+{
+  <span class="json-key">"author"</span>: <span class="json-val">"Mayzaa"</span>,
+  <span class="json-key">"file"</span>: <span class="json-val">"yourfile.png"</span>,
+  <span class="json-key">"link"</span>: <span class="json-val">"https://uploader.mayzaa.my.id/api/upload/yourfile.png"</span>
+}
+            </div>
+
+            <div class="section-row">
+                <span class="section-label">SHORTEN ENDPOINT (POST /api/shorten)</span>
+            </div>
+            <div class="code-box gray" id="shortenEndpointBox">curl -X POST https://uploader.mayzaa.my.id/api/shorten \
+  -H "Content-Type: application/json" \
+  -d "{\"url\":\"https://image.pollinations.ai/prompt/blackhole?model=flux&width=1024\"}"</div>
+            <div class="code-box dark" style="margin-top:0.75rem;">
+{
+  <span class="json-key">"author"</span>: <span class="json-val">"Mayzaa"</span>,
+  <span class="json-key">"code"</span>: <span class="json-val">"aZ3kq1"</span>,
+  <span class="json-key">"original"</span>: <span class="json-val">"https://image.pollinations.ai/prompt/..."</span>,
+  <span class="json-key">"link"</span>: <span class="json-val">"https://uploader.mayzaa.my.id/s/aZ3kq1"</span>
+}
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">Copied to clipboard!</div>
+
+    <script>
+        lucide.createIcons();
+
+        const API_BASE = '/api/upload';
+        let toastTimer = null;
+        let uploadInProgress = false;
+
+        // DOM refs
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadIconWrapper = document.getElementById('uploadIconWrapper');
+        const dropMainText = document.getElementById('dropMainText');
+        const dropSubText = document.getElementById('dropSubText');
+        const progressWrapper = document.getElementById('progressWrapper');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const resultBox = document.getElementById('resultBox');
+        const resultUrl = document.getElementById('resultUrl');
+        const urlWrapper = document.getElementById('urlWrapper');
+        const fileInfo = document.getElementById('fileInfo');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const toast = document.getElementById('toast');
+
+        // ===== TOAST =====
+        function showToast(msg, duration = 2500, type = '') {
+            toast.textContent = msg;
+            toast.className = 'toast';
+            if (type) toast.classList.add(type);
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+        }
+
+        // ===== COPY =====
+        window.copyText = function(text) {
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied to clipboard!', 2000, 'success');
+            }).catch(() => {
+                const input = document.createElement('textarea');
+                input.value = text;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast('Copied to clipboard!', 2000, 'success');
+            });
+        };
+
+        // ===== FORMAT SIZE =====
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        // ===== SET LOADING STATE =====
+        function setLoading(isLoading) {
+            uploadInProgress = isLoading;
+            if (isLoading) {
+                dropZone.classList.add('disabled');
+                uploadIconWrapper.classList.add('loading');
+                dropMainText.textContent = 'Uploading...';
+                dropSubText.textContent = 'Please wait';
+                progressWrapper.classList.add('show');
+                progressFill.className = 'progress-bar-fill indeterminate';
+                progressText.textContent = 'Uploading...';
+                resultBox.classList.remove('show');
+                errorMessage.classList.remove('show');
+                urlWrapper.className = 'url-wrapper';
+                fileInfo.className = 'file-info';
+            } else {
+                dropZone.classList.remove('disabled');
+                uploadIconWrapper.classList.remove('loading');
+                dropMainText.textContent = 'Drop file or click here';
+                dropSubText.textContent = 'Support upload all file types';
+                progressWrapper.classList.remove('show');
+                progressFill.className = 'progress-bar-fill';
+                progressFill.style.width = '0%';
+            }
+        }
+
+        // ===== SET RESULT =====
+        function setResult(url, name, size, isError = false, errorMsg = '') {
+            if (isError) {
+                urlWrapper.className = 'url-wrapper error';
+                fileInfo.className = 'file-info error';
+                resultUrl.textContent = 'Upload Failed';
+                fileInfo.textContent = errorMsg;
+                errorMessage.classList.add('show');
+                errorText.textContent = errorMsg;
+                uploadIconWrapper.className = 'upload-icon-wrapper error';
+                // Re-init lucide untuk icon error
+                setTimeout(() => lucide.createIcons(), 50);
+            } else {
+                urlWrapper.className = 'url-wrapper';
+                fileInfo.className = 'file-info success';
+                resultUrl.textContent = url;
+                fileInfo.textContent = name + ' · ' + formatSize(size);
+                errorMessage.classList.remove('show');
+                uploadIconWrapper.className = 'upload-icon-wrapper success';
+            }
+            resultBox.classList.add('show');
+            lucide.createIcons();
+        }
+
+        // ===== RESET UI =====
+        function resetUI() {
+            uploadIconWrapper.className = 'upload-icon-wrapper';
+            resultBox.classList.remove('show');
+            errorMessage.classList.remove('show');
+            urlWrapper.className = 'url-wrapper';
+            fileInfo.className = 'file-info';
+            resultUrl.textContent = 'https://...';
+            fileInfo.textContent = '';
+        }
+
+        // ===== UPLOAD FILES =====
+        async function uploadFiles(fileListToUpload) {
+            if (uploadInProgress) return;
+            if (!fileListToUpload || fileListToUpload.length === 0) {
+                showToast('No file selected', 2000, 'error');
+                return;
+            }
+
+            // Validasi ukuran file (4.5 MB = 4,718,592 bytes)
+            const MAX_SIZE = 4.5 * 1024 * 1024;
+            for (const file of fileListToUpload) {
+                if (file.size > MAX_SIZE) {
+                    showToast('File too large! Max 4.5 MB', 3000, 'error');
+                    return;
+                }
+            }
+
+            resetUI();
+            setLoading(true);
+
+            const formData = new FormData();
+            for (let i = 0; i < fileListToUpload.length; i++) {
+                formData.append('files', fileListToUpload[i]);
+            }
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+                const resp = await fetch(API_BASE, {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!resp.ok) {
+                    const errorData = await resp.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${resp.status}: ${resp.statusText}`);
+                }
+
+                const result = await resp.json();
+
+                if (result.link && result.file) {
+                    setResult(result.link, result.file, result.size || 0);
+                    showToast('✅ Upload successful!', 2500, 'success');
+                } else if (result.files && result.files.length > 0) {
+                    const first = result.files[0];
+                    setResult(first.link, first.file, first.size || 0);
+                    showToast('✅ ' + result.files.length + ' file berhasil diupload!', 2500, 'success');
+                } else {
+                    throw new Error('No link returned from server');
+                }
+
+            } catch (err) {
+                let errorMsg = err.message || 'Upload failed';
+                if (err.name === 'AbortError') {
+                    errorMsg = 'Request timeout. Please try again.';
+                } else if (err.message.includes('Failed to fetch')) {
+                    errorMsg = 'Network error. Check your connection.';
+                } else if (err.message.includes('413')) {
+                    errorMsg = 'File too large. Max 4.5 MB.';
+                }
+                setResult('', '', 0, true, errorMsg);
+                showToast('❌ ' + errorMsg, 3000, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // ===== EVENT LISTENERS =====
+        dropZone.addEventListener('click', () => {
+            if (!uploadInProgress) fileInput.click();
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!uploadInProgress) dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length && !uploadInProgress) {
+                uploadFiles(e.dataTransfer.files);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length && !uploadInProgress) {
+                uploadFiles(e.target.files);
+                fileInput.value = '';
+            }
+        });
+
+        document.getElementById('copyResultBtn').addEventListener('click', () => {
+            const url = resultUrl.textContent;
+            if (url && url !== 'https://...' && url !== 'Upload Failed') {
+                copyText(url);
+            } else {
+                showToast('No URL to copy', 1500, 'error');
+            }
+        });
+
+        // ===== INIT =====
+        resultBox.classList.remove('show');
+        lucide.createIcons();
+
+        // ===== FILL ENDPOINT BOXES WITH CURRENT DOMAIN =====
+        (function fillEndpoints() {
+            const origin = location.origin;
+            const endpointBox = document.getElementById('endpointBox');
+            const curlBox = document.getElementById('curlBox');
+            const shortenEndpointBox = document.getElementById('shortenEndpointBox');
+            if (endpointBox) endpointBox.textContent = origin + '/api/upload';
+            if (curlBox) curlBox.textContent = 'curl -X POST ' + origin + '/api/upload \\\n  -F "files=@yourfile.png"';
+            if (shortenEndpointBox) {
+                shortenEndpointBox.textContent =
+                    'curl -X POST ' + origin + '/api/shorten \\\n' +
+                    '  -H "Content-Type: application/json" \\\n' +
+                    '  -d \'{"url":"https://image.pollinations.ai/prompt/blackhole?model=flux&width=1024"}\'';
+            }
+        })();
+
+        // ===== LINK SHORTENER =====
+        const longUrlInput = document.getElementById('longUrlInput');
+        const shortenBtn = document.getElementById('shortenBtn');
+        const shortenResultBox = document.getElementById('shortenResultBox');
+        const shortenResultUrl = document.getElementById('shortenResultUrl');
+        const shortenInfo = document.getElementById('shortenInfo');
+        const shortenUrlWrapper = document.getElementById('shortenUrlWrapper');
+        let shortenInProgress = false;
+
+        async function shortenLink() {
+            if (shortenInProgress) return;
+            const longUrl = (longUrlInput.value || '').trim();
+            if (!longUrl) {
+                showToast('Tempel link dulu ya', 2000, 'error');
+                return;
+            }
+
+            shortenInProgress = true;
+            shortenBtn.disabled = true;
+            const originalBtnHtml = shortenBtn.innerHTML;
+            shortenBtn.innerHTML = '<i data-lucide="loader"></i> Shortening...';
+            lucide.createIcons();
+
+            try {
+                const resp = await fetch('/api/shorten', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: longUrl })
+                });
+
+                const result = await resp.json();
+
+                if (!resp.ok || !result.link) {
+                    throw new Error(result.error || 'Gagal membuat short link');
+                }
+
+                shortenUrlWrapper.className = 'url-wrapper';
+                shortenResultUrl.textContent = result.link;
+                shortenInfo.textContent = 'dari: ' + result.original;
+                shortenInfo.className = 'file-info success';
+                shortenResultBox.classList.add('show');
+                showToast('✅ Link berhasil disingkat!', 2500, 'success');
+            } catch (err) {
+                shortenUrlWrapper.className = 'url-wrapper error';
+                shortenResultUrl.textContent = 'Gagal';
+                shortenInfo.textContent = err.message || 'Terjadi kesalahan';
+                shortenInfo.className = 'file-info error';
+                shortenResultBox.classList.add('show');
+                showToast('❌ ' + (err.message || 'Gagal membuat short link'), 3000, 'error');
+            } finally {
+                shortenInProgress = false;
+                shortenBtn.disabled = false;
+                shortenBtn.innerHTML = originalBtnHtml;
+                lucide.createIcons();
+            }
+        }
+
+        shortenBtn.addEventListener('click', shortenLink);
+        longUrlInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') shortenLink();
+        });
+
+        document.getElementById('copyShortenBtn').addEventListener('click', () => {
+            const url = shortenResultUrl.textContent;
+            if (url && url !== 'https://...' && url !== 'Gagal') {
+                copyText(url);
+            } else {
+                showToast('No link to copy', 1500, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

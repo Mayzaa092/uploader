@@ -1,0 +1,14 @@
+{
+  "name": "mayzaa-uploader",
+  "version": "2.0.0",
+  "description": "MayzaaCloud file uploader + link shortener API. Deploy-anywhere: Vercel, VPS, Windows, Replit.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
