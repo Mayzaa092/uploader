@@ -650,11 +650,9 @@
             </div>
 
             <div class="section-row">
-                <span class="section-label">SHORTEN ENDPOINT (POST /api/shorten)</span>
+                <span class="section-label">SHORTEN ENDPOINT (GET /api/shorten?url=...)</span>
             </div>
-            <div class="code-box gray" id="shortenEndpointBox">curl -X POST https://uploader.mayzaa.my.id/api/shorten \
-  -H "Content-Type: application/json" \
-  -d "{\"url\":\"https://image.pollinations.ai/prompt/blackhole?model=flux&width=1024\"}"</div>
+            <div class="code-box gray" id="shortenEndpointBox">curl "https://uploader.mayzaa.my.id/api/shorten?url=https%3A%2F%2Fimage.pollinations.ai%2Fprompt%2Fblackhole%3Fmodel%3Dflux%26width%3D1024"</div>
             <div class="code-box dark" style="margin-top:0.75rem;">
 {
   <span class="json-key">"author"</span>: <span class="json-val">"Mayzaa"</span>,
@@ -910,9 +908,8 @@
             if (curlBox) curlBox.textContent = 'curl -X POST ' + origin + '/api/upload \\\n  -F "files=@yourfile.png"';
             if (shortenEndpointBox) {
                 shortenEndpointBox.textContent =
-                    'curl -X POST ' + origin + '/api/shorten \\\n' +
-                    '  -H "Content-Type: application/json" \\\n' +
-                    '  -d \'{"url":"https://image.pollinations.ai/prompt/blackhole?model=flux&width=1024"}\'';
+                    'curl "' + origin + '/api/shorten?url=' +
+                    encodeURIComponent('https://image.pollinations.ai/prompt/blackhole?model=flux&width=1024') + '"';
             }
         })();
 
@@ -940,11 +937,7 @@
             lucide.createIcons();
 
             try {
-                const resp = await fetch('/api/shorten', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: longUrl })
-                });
+                const resp = await fetch('/api/shorten?url=' + encodeURIComponent(longUrl));
 
                 const result = await resp.json();
 

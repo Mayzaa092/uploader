@@ -11,8 +11,8 @@ File uploader + link shortener API, bisa dijalankan di **Vercel**, **VPS**, **Wi
 | `GET` | `/api/upload/:filename` | Download / akses file langsung |
 | `DELETE` | `/api/upload?file=nama.ext` | Hapus file (bisa juga `?id=...`) |
 | `POST` | `/api/botupload?filename=nama.ext` | Upload raw bytes (buat bot/script, body = isi file apa adanya) |
-| `POST` | `/api/shorten` | Convert link panjang jadi link pendek |
-| `GET` | `/api/shorten` | List semua short link |
+| `POST` / `GET` | `/api/shorten` | Convert link panjang jadi link pendek — `POST` body JSON `{"url":"..."}` atau `GET ?url=...` |
+| `GET` | `/api/shorten` (tanpa `?url=`) | List semua short link |
 | `GET` | `/s/:code` | Redirect ke link asli |
 
 ### Format response upload
@@ -27,14 +27,21 @@ File uploader + link shortener API, bisa dijalankan di **Vercel**, **VPS**, **Wi
 
 ### Format response shorten
 
-Request:
+Paling gampang, tinggal GET biasa (link asli wajib di-`encodeURIComponent` dulu kalau ada tanda `?` / `&` di dalamnya, biar gak ke-parse sebagai parameter terpisah):
+
+```bash
+curl "https://uploader.mayzaa.my.id/api/shorten?url=https%3A%2F%2Fimage.pollinations.ai%2Fprompt%2Fblackhole%3Fmodel%3Dflux%26width%3D1024%26height%3D1024%26nologo%3Dtrue%26private%3Dfalse%26enhance%3Dfalse%26safe%3Dfalse"
+```
+
+Atau bisa juga langsung dibuka di address bar browser. Kalau lebih suka kirim JSON lewat POST, tetep bisa:
+
 ```bash
 curl -X POST https://uploader.mayzaa.my.id/api/shorten \
   -H "Content-Type: application/json" \
   -d '{"url":"https://image.pollinations.ai/prompt/blackhole?model=flux&width=1024&height=1024&nologo=true&private=false&enhance=false&safe=false"}'
 ```
 
-Response:
+Response (sama untuk keduanya):
 ```json
 {
   "author": "Mayzaa",
