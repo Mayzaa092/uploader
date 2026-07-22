@@ -584,6 +584,34 @@
         </div>
 
         <!-- Card 2: Link Shortener -->
+        <!-- Card: Clone dari URL -->
+        <div class="card">
+            <div class="api-header">
+                <i data-lucide="download-cloud"></i>
+                <h2>Clone dari URL</h2>
+            </div>
+            <p class="api-subtitle">Tempel link file (gambar, video, dsb) — server yang download & upload-in otomatis ke MayzaaCloud, jadi link sendiri.</p>
+
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                <input id="cloneUrlInput" type="text" placeholder="https://contoh.com/file.png"
+                    style="flex:1; min-width:200px; background:var(--code-gray-bg); border:1px solid var(--border-light); color:var(--text-main); border-radius:0.75rem; padding:0.75rem 1rem; font-family:'JetBrains Mono', monospace; font-size:0.85rem;" />
+                <button id="cloneBtn" class="copy-btn" style="padding:0.75rem 1.25rem;">
+                    <i data-lucide="download-cloud"></i> Clone
+                </button>
+            </div>
+
+            <div class="result-box" id="cloneResultBox">
+                <span class="label">📥 CLONED FILE</span>
+                <div class="url-wrapper" id="cloneUrlWrapper">
+                    <span class="url" id="cloneResultUrl">https://...</span>
+                    <button class="copy-btn" id="copyCloneBtn">
+                        <i data-lucide="copy"></i> Copy
+                    </button>
+                </div>
+                <div class="file-info" id="cloneInfo"></div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="api-header">
                 <i data-lucide="link-2"></i>
@@ -659,6 +687,25 @@
   <span class="json-key">"code"</span>: <span class="json-val">"aZ3kq1"</span>,
   <span class="json-key">"original"</span>: <span class="json-val">"https://image.pollinations.ai/prompt/..."</span>,
   <span class="json-key">"link"</span>: <span class="json-val">"https://uploader.mayzaa.my.id/s/aZ3kq1"</span>
+}
+            </div>
+
+            <div class="section-row">
+                <span class="section-label">CLONE ENDPOINT (POST /api/clone, maks 25 MB)</span>
+                <button class="copy-btn-api" onclick="copyText('curl -X POST ' + location.origin + '/api/clone \\\n  -H &quot;Content-Type: application/json&quot; \\\n  -d &quot;{\\&quot;url\\&quot;:\\&quot;https://contoh.com/file.png\\&quot;}&quot;')">
+                    <i data-lucide="copy"></i> Copy
+                </button>
+            </div>
+            <div class="code-box gray" id="cloneEndpointBox">curl -X POST https://uploader.mayzaa.my.id/api/clone \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://contoh.com/file.png"}'</div>
+            <div class="code-box dark" style="margin-top:0.75rem;">
+{
+  <span class="json-key">"author"</span>: <span class="json-val">"Mayzaa"</span>,
+  <span class="json-key">"file"</span>: <span class="json-val">"file.png"</span>,
+  <span class="json-key">"link"</span>: <span class="json-val">"https://uploader.mayzaa.my.id/api/upload/file.png"</span>,
+  <span class="json-key">"size"</span>: <span class="json-val">123456</span>,
+  <span class="json-key">"clonedFrom"</span>: <span class="json-val">"https://contoh.com/file.png"</span>
 }
             </div>
         </div>
@@ -904,12 +951,17 @@
             const endpointBox = document.getElementById('endpointBox');
             const curlBox = document.getElementById('curlBox');
             const shortenEndpointBox = document.getElementById('shortenEndpointBox');
+            const cloneEndpointBox = document.getElementById('cloneEndpointBox');
             if (endpointBox) endpointBox.textContent = origin + '/api/upload';
             if (curlBox) curlBox.textContent = 'curl -X POST ' + origin + '/api/upload \\\n  -F "files=@yourfile.png"';
             if (shortenEndpointBox) {
                 shortenEndpointBox.textContent =
                     'curl "' + origin + '/api/shorten?url=' +
                     encodeURIComponent('https://image.pollinations.ai/prompt/blackhole?model=flux&width=1024') + '"';
+            }
+            if (cloneEndpointBox) {
+                cloneEndpointBox.textContent =
+                    'curl -X POST ' + origin + '/api/clone \\\n  -H "Content-Type: application/json" \\\n  -d \'{"url":"https://contoh.com/file.png"}\'';
             }
         })();
 
@@ -977,6 +1029,84 @@
                 copyText(url);
             } else {
                 showToast('No link to copy', 1500, 'error');
+            }
+        });
+
+        // ===== CLONE DARI URL =====
+        const cloneUrlInput = document.getElementById('cloneUrlInput');
+        const cloneBtn = document.getElementById('cloneBtn');
+        const cloneResultBox = document.getElementById('cloneResultBox');
+        const cloneResultUrl = document.getElementById('cloneResultUrl');
+        const cloneInfo = document.getElementById('cloneInfo');
+        const cloneUrlWrapper = document.getElementById('cloneUrlWrapper');
+        let cloneInProgress = false;
+
+        async function cloneFromUrl() {
+            if (cloneInProgress) return;
+            const sourceUrl = (cloneUrlInput.value || '').trim();
+            if (!sourceUrl) {
+                showToast('Tempel link file dulu ya', 2000, 'error');
+                return;
+            }
+
+            cloneInProgress = true;
+            cloneBtn.disabled = true;
+            const originalBtnHtml = cloneBtn.innerHTML;
+            cloneBtn.innerHTML = '<i data-lucide="loader"></i> Cloning...';
+            lucide.createIcons();
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+                const resp = await fetch('/api/clone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: sourceUrl }),
+                    signal: controller.signal,
+                });
+                clearTimeout(timeoutId);
+
+                const result = await resp.json().catch(() => ({}));
+
+                if (!resp.ok || !result.link) {
+                    throw new Error(result.error || `HTTP ${resp.status}: gagal clone file`);
+                }
+
+                cloneUrlWrapper.className = 'url-wrapper';
+                cloneResultUrl.textContent = result.link;
+                cloneInfo.textContent = result.file + ' · ' + formatSize(result.size || 0);
+                cloneInfo.className = 'file-info success';
+                cloneResultBox.classList.add('show');
+                showToast('✅ File berhasil di-clone!', 2500, 'success');
+            } catch (err) {
+                let errorMsg = err.message || 'Gagal clone file';
+                if (err.name === 'AbortError') errorMsg = 'Request timeout. Coba lagi.';
+                cloneUrlWrapper.className = 'url-wrapper error';
+                cloneResultUrl.textContent = 'Gagal';
+                cloneInfo.textContent = errorMsg;
+                cloneInfo.className = 'file-info error';
+                cloneResultBox.classList.add('show');
+                showToast('❌ ' + errorMsg, 3000, 'error');
+            } finally {
+                cloneInProgress = false;
+                cloneBtn.disabled = false;
+                cloneBtn.innerHTML = originalBtnHtml;
+                lucide.createIcons();
+            }
+        }
+
+        cloneBtn.addEventListener('click', cloneFromUrl);
+        cloneUrlInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') cloneFromUrl();
+        });
+
+        document.getElementById('copyCloneBtn').addEventListener('click', () => {
+            const url = cloneResultUrl.textContent;
+            if (url && url !== 'https://...' && url !== 'Gagal') {
+                copyText(url);
+            } else {
+                showToast('No URL to copy', 1500, 'error');
             }
         });
     </script>
